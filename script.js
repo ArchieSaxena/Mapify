@@ -12,63 +12,84 @@ const inputCadence = document.querySelector('.form__input--cadence');
 const inputElevation = document.querySelector('.form__input--elevation');
 
 let map,mapEvent;
-if(navigator.geolocation)
+class App
 {
-    navigator.geolocation.getCurrentPosition(
-        function(position)
+    //private class fields
+    #map;
+    #mapEvent;
+    constructor()
+    {
+        this._getposition();
+        form.addEventListener('submit',this._newWorkout.bind(this));//to make it point to the object itself
+
+        inputType.addEventListener('change',this.__toggleElevationField);
+    }
+
+    _getposition()
+    {
+        if(navigator.geolocation)
         {
-            console.log(position);
-            const {latitude}=position.coords;
-            const {longitude}=position.coords;
-            console.log(`https://www.google.com/maps/@{latitude},{longitude},15z?entry=ttu`);
-            const coords=[latitude,longitude];
-            map = L.map('map').setView(coords, 13);
+            navigator.geolocation.getCurrentPosition(this._loadMap.bind(this),function(){
+                    alert('Could not get your location');
+            });
+        }
+    }
 
-            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+    _loadMap(position)
+    {
+        const {latitude}=position.coords;
+        const {longitude}=position.coords;
+        console.log(`https://www.google.com/maps/@{latitude},{longitude},15z?entry=ttu`);
+        const coords=[latitude,longitude];
+        console.log(this);
+        this.#map = L.map('map').setView(coords, 13);
 
-            //handling clicks on map
-            map.on('click',function(mapE)
-            {
-                mapEvent=mapE;
-                form.classList.remove('hidden');
-                inputDistance.focus();
-                
-            })
-        },
+        L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(this.#map);
 
-        function(){
-            alert('Could not get your location');
-    });
+        //handling clicks on map
+        this.#map.on('click',this._showform.bind(this));//it will set to the object that add event handler is attached which we dont want and so we r using bind to to bind it to the app
+    }
+
+    _showform(mapE)
+    {
+        this.#mapEvent=mapE;
+        form.classList.remove('hidden');
+        inputDistance.focus();
+    }
+
+    _toggleElevationField()
+    {
+        inputElevation.closest('.form__row').classList.toggle('form__row--hidden'); //CLOSEST is like inverse query selector it will select parent rather than children
+        inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
+    }
+
+    _newWorkout(e)
+    {
+        e.preventDefault();
+        //clear input fields
+        inputDistance.value='';
+        inputDuration.value='';
+        inputCadence.value='';
+        inputElevation.value='';
+            // console.log(mapEvent);
+
+            const {lat,lng}=this.#mapEvent.latlng;
+
+            L.marker([lat,lng]).addTo(this.#map)
+                .bindPopup(L.popup({
+                maxWidth:250,
+                minWidth:100,
+                autoClose:false,
+                closeOnClick:false,
+                className:'running-popup',
+            }))
+            .setPopupContent('Workout')
+            .openPopup();  
+    }
 }
 
-form.addEventListener('submit',function(e)
-{
-    e.preventDefault();
-    //clear input fields
-    inputDistance.value='';
-    inputDuration.value='';
-    inputCadence.value='';
-    inputElevation.value='';
-        console.log(mapEvent);
+const app=new App();
 
-        const {lat,lng}=mapEvent.latlng;
 
-        L.marker([lat,lng]).addTo(map)
-            .bindPopup(L.popup({
-            maxWidth:250,
-            minWidth:100,
-            autoClose:false,
-            closeOnClick:false,
-            className:'running-popup',
-        }))
-        .setPopupContent('Workout')
-        .openPopup();
-});
-
-inputType.addEventListener('change',function()
-{
-    inputElevation.closest('.form__row').classList.toggle('form__row--hidden'); //CLOSEST is like inverse query selector it will select parent rather than children
-    inputCadence.closest('.form__row').classList.toggle('form__row--hidden');
-});
