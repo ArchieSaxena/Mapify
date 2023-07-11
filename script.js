@@ -85,8 +85,12 @@ class App
     #workouts=[];
     constructor()
     {
-        
+        //users position
         this._getposition();
+
+        //get data from local storage
+        this._getLocalStorage();
+        //event handlers
         form.addEventListener('submit',this._newWorkout.bind(this));//to make it point to the object itself
         // inputType.addEventListener('change', this._toggleElevationField);
         inputType.addEventListener('change', this._toggleElevationField);
@@ -118,6 +122,12 @@ class App
 
         //handling clicks on map
         this.#map.on('click',this._showform.bind(this));//it will set to the object that add event handler is attached which we dont want and so we r using bind to to bind it to the app
+
+        this.#workouts.forEach(work=>
+        {
+            this.renderWorkoutMarker(work);
+        });
+
     }
 
     _showform(mapE)
@@ -195,6 +205,10 @@ class App
         e.preventDefault();
         //clear input fields
         this._hideForm();
+
+
+        //set local storage to all workouts
+        this._setLocalStorage();
     }
 
 
@@ -267,13 +281,13 @@ class App
     _moveToPopup(e)
     {
         const workoutEl=e.target.closest('.workout');
-        console.log(workoutEl);
+        // console.log(workoutEl);
 
         if(!workoutEl) return;
 
         const workout=this.#workouts.find(work=>work.id===workoutEl.dataset.id);
 
-        console.log(workout);
+        // console.log(workout);
 
         this.#map.setView(workout.coords,this.#mapZoomLevel,{
             animate:true,
@@ -283,9 +297,39 @@ class App
         });
 
         //using the public interface
-        workout.click();
+        // workout.click();//OBJECTS coming from local storage will not inherit all the methods
+        //since we r converting object to strings and then back again
         // console.log(workout.click());
     }
+
+
+    _setLocalStorage()
+    {
+        localStorage.setItem('workouts',JSON.stringify(this.#workouts));
+    }
+
+    _getLocalStorage()
+    {
+        const data=JSON.parse(localStorage.getItem('workouts'));
+        console.log(data);
+
+        if(!data) return;
+        this.#workouts=data;
+        
+
+        this.#workouts.forEach(work=>
+        {
+            this._renderWorkout(work);
+            // this.renderWorkoutMarker(work);
+        });
+    }
+
+    reset()
+    {
+        localStorage.removeItem('workouts');
+        location.reload();
+    }
+    //app.reset() to empty the local storage
 }
 
 const app=new App();
